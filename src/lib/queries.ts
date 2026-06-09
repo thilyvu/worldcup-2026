@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { getDb, ObjectId } from "./db";
 import type { Match, Player, Pick, Round } from "./types";
 
@@ -76,12 +77,17 @@ async function col<T extends object>(name: string) {
 }
 
 // ---- Players -------------------------------------------------------------
+// Cache 5 min — player list never changes during tournament
 
-export async function getPlayers(): Promise<Player[]> {
-  const c = await col<PlayerDoc>("players");
-  const docs = await c.find().sort({ name: 1 }).toArray();
-  return docs.map(toPlayer);
-}
+export const getPlayers: () => Promise<Player[]> = unstable_cache(
+  async () => {
+    const c = await col<PlayerDoc>("players");
+    const docs = await c.find().sort({ name: 1 }).toArray();
+    return docs.map(toPlayer);
+  },
+  ["players"],
+  { revalidate: 300, tags: ["players"] }
+);
 
 export async function getPlayerByName(name: string): Promise<
   (Player & { pin_hash: string | null }) | null
@@ -99,20 +105,29 @@ export async function getPlayerById(id: string): Promise<Player | null> {
 }
 
 // ---- Matches -------------------------------------------------------------
+// Cache 60s per round — invalidated by setResultAction / setTeamsAction
 
-export async function getMatches(round?: Round): Promise<Match[]> {
-  const c = await col<MatchDoc>("matches");
-  const roundOrder = ["group", "r32", "r16", "qf", "sf", "final"];
-  const filter = round ? { round } : {};
-  const docs = await c.find(filter).sort({ ordinal: 1 }).toArray();
-  if (!round) {
-    docs.sort(
-      (a, b) =>
-        roundOrder.indexOf(a.round) - roundOrder.indexOf(b.round) ||
-        a.ordinal - b.ordinal
-    );
-  }
-  return docs.map(toMatch);
+const ROUND_ORDER = ["group", "r32", "r16", "qf", "sf", "final"];
+
+export function getMatches(round?: Round): Promise<Match[]> {
+  const key = round ?? "all";
+  return unstable_cache(
+    async () => {
+      const c = await col<MatchDoc>("matches");
+      const filter = round ? { round } : {};
+      const docs = await c.find(filter).sort({ ordinal: 1 }).toArray();
+      if (!round) {
+        docs.sort(
+          (a, b) =>
+            ROUND_ORDER.indexOf(a.round) - ROUND_ORDER.indexOf(b.round) ||
+            a.ordinal - b.ordinal
+        );
+      }
+      return docs.map(toMatch);
+    },
+    ["matches", key],
+    { revalidate: 60, tags: ["matches"] }
+  )();
 }
 
 export async function getMatch(id: string): Promise<Match | null> {
@@ -122,6 +137,8 @@ export async function getMatch(id: string): Promise<Match | null> {
 }
 
 // ---- Predictions ---------------------------------------------------------
+// getAllPredictions cached 60s (for /matches and leaderboard pages)
+// getPredictionsForPlayer NOT cached (user-specific, must be fresh)
 
 export type PredictionRow = {
   player_id: string;
@@ -139,29 +156,38 @@ export async function getPredictionsForPlayer(
   return map;
 }
 
-export async function getAllPredictions(): Promise<PredictionRow[]> {
-  const c = await col<PredictionDoc>("predictions");
-  const docs = await c.find().toArray();
-  return docs.map((d) => ({
-    player_id: d.player_id.toString(),
-    match_id: d.match_id.toString(),
-    pick: d.pick,
-  }));
-}
+export const getAllPredictions: () => Promise<PredictionRow[]> = unstable_cache(
+  async () => {
+    const c = await col<PredictionDoc>("predictions");
+    const docs = await c.find().toArray();
+    return docs.map((d) => ({
+      player_id: d.player_id.toString(),
+      match_id: d.match_id.toString(),
+      pick: d.pick,
+    }));
+  },
+  ["predictions"],
+  { revalidate: 60, tags: ["predictions"] }
+);
 
 // ---- Champion picks ------------------------------------------------------
+// Cache 60s — invalidated by saveChampionAction
+
+export const getChampionPicks: () => Promise<ChampionPick[]> = unstable_cache(
+  async () => {
+    const c = await col<ChampionDoc>("champion_picks");
+    const docs = await c.find().toArray();
+    return docs.map((d) => ({
+      player_id: d.player_id.toString(),
+      team: d.team,
+      points: d.points,
+    }));
+  },
+  ["champion_picks"],
+  { revalidate: 60, tags: ["champion_picks"] }
+);
 
 export type ChampionPick = { player_id: string; team: string; points: number };
-
-export async function getChampionPicks(): Promise<ChampionPick[]> {
-  const c = await col<ChampionDoc>("champion_picks");
-  const docs = await c.find().toArray();
-  return docs.map((d) => ({
-    player_id: d.player_id.toString(),
-    team: d.team,
-    points: d.points,
-  }));
-}
 
 export async function getChampionPickForPlayer(
   playerId: string
@@ -172,17 +198,22 @@ export async function getChampionPickForPlayer(
 }
 
 // ---- Settings ------------------------------------------------------------
+// Cache 60s — invalidated by setChampionAction
+
+export const getSettings: () => Promise<Settings> = unstable_cache(
+  async () => {
+    const c = await col<SettingsDoc>("settings");
+    const d = await c.findOne({});
+    return {
+      champion: d?.champion ?? null,
+      champion_lock: d?.champion_lock?.toISOString() ?? null,
+    };
+  },
+  ["settings"],
+  { revalidate: 60, tags: ["settings"] }
+);
 
 export type Settings = {
   champion: string | null;
   champion_lock: string | null;
 };
-
-export async function getSettings(): Promise<Settings> {
-  const c = await col<SettingsDoc>("settings");
-  const d = await c.findOne({});
-  return {
-    champion: d?.champion ?? null,
-    champion_lock: d?.champion_lock?.toISOString() ?? null,
-  };
-}

@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import bcrypt from "bcryptjs";
 import { getDb, ObjectId } from "./db";
 import {
@@ -70,6 +70,7 @@ export async function savePredictionAction(formData: FormData) {
     { upsert: true }
   );
 
+  revalidateTag("predictions");
   revalidatePath("/predict");
   revalidatePath("/");
 }
@@ -93,6 +94,7 @@ export async function saveChampionAction(formData: FormData) {
     { upsert: true }
   );
 
+  revalidateTag("champion_picks");
   revalidatePath("/champion");
   revalidatePath("/");
 }
@@ -125,6 +127,8 @@ export async function setResultAction(formData: FormData) {
     );
   }
 
+  revalidateTag("matches");
+  revalidateTag("predictions");
   revalidatePath("/admin");
   revalidatePath("/");
   revalidatePath("/groups");
@@ -144,6 +148,7 @@ export async function setTeamsAction(formData: FormData) {
     { $set: { team1, team2 } }
   );
 
+  revalidateTag("matches");
   revalidatePath("/admin");
   revalidatePath("/matches");
   revalidatePath("/predict");
@@ -157,6 +162,7 @@ export async function setChampionAction(formData: FormData) {
     .collection("settings")
     .updateOne({}, { $set: { champion: champion || null } }, { upsert: true });
 
+  revalidateTag("settings");
   revalidatePath("/admin");
   revalidatePath("/");
 }
