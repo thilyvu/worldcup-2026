@@ -62,7 +62,7 @@ export async function savePredictionAction(formData: FormData) {
 
   const locked =
     match.status === "finished" ||
-    (match.kickoff && new Date(match.kickoff).getTime() <= Date.now());
+    (match.kickoff && new Date(match.kickoff).getTime() <= Date.now() + 2 * 60 * 60 * 1000);
   if (locked) return;
 
   const db = await getDb();

@@ -36,7 +36,7 @@ export type Player = {
 
 export function isLocked(m: Match): boolean {
   if (m.status === "finished") return true;
-  if (m.kickoff && new Date(m.kickoff).getTime() <= Date.now()) return true;
+  if (m.kickoff && new Date(m.kickoff).getTime() <= Date.now() + 2 * 60 * 60 * 1000) return true;
   return false;
 }
 
