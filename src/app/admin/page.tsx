@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentPlayer } from "@/lib/auth";
 import { getMatches, getSettings } from "@/lib/queries";
 import { ROUND_LABEL, ROUND_ORDER } from "@/lib/types";
-import { setResultAction, setTeamsAction, setChampionAction } from "@/lib/actions";
+import { setResultAction, setTeamsAction, setChampionAction, setGroupPenaltyAction } from "@/lib/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -42,8 +42,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         </h1>
       </div>
 
-      {/* Set champion */}
-      <div className="glass glass-gold anim-up d1" style={{ padding: "20px 24px" }}>
+      {/* Settings row */}
+      <div className="anim-up d1" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        {/* Set champion */}
+        <div className="glass glass-gold" style={{ padding: "20px 24px", flex: "1 1 260px" }}>
         <p style={{ fontWeight: 700, fontSize: "0.85rem", marginBottom: 12, color: "#FFB800" }}>🏆 Đặt nhà vô địch</p>
         <form action={setChampionAction} style={{ display: "flex", gap: 10 }}>
           <input
@@ -58,6 +60,26 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             cursor: "pointer", flexShrink: 0,
           }}>Lưu</button>
         </form>
+        </div>
+
+        {/* Group penalty */}
+        <div className="glass" style={{ padding: "20px 24px", flex: "1 1 200px" }}>
+          <p style={{ fontWeight: 700, fontSize: "0.85rem", marginBottom: 12, color: "#FF4D6A" }}>⚙ Phạt vòng bảng (k)</p>
+          <form action={setGroupPenaltyAction} style={{ display: "flex", gap: 10 }}>
+            <input
+              name="group_penalty" type="number" min="0" step="1"
+              defaultValue={settings.group_penalty ?? 5}
+              className="input"
+              style={{ width: 80, textAlign: "center", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "1.1rem" }}
+            />
+            <button type="submit" style={{
+              padding: "10px 20px", borderRadius: 10, border: "1px solid rgba(255,77,106,0.3)",
+              background: "rgba(255,77,106,0.07)", color: "#FF4D6A",
+              fontFamily: "var(--font-barlow)", fontWeight: 700, fontSize: "0.9rem",
+              cursor: "pointer", flexShrink: 0,
+            }}>Lưu</button>
+          </form>
+        </div>
       </div>
 
       {/* Round tabs */}

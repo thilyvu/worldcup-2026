@@ -44,6 +44,7 @@ type SettingsDoc = {
   _id: ObjectId;
   champion: string | null;
   champion_lock: Date | null;
+  group_penalty: number | null;
 };
 
 // ---- Converters ----------------------------------------------------------
@@ -207,6 +208,7 @@ export const getSettings: () => Promise<Settings> = unstable_cache(
     return {
       champion: d?.champion ?? null,
       champion_lock: d?.champion_lock?.toISOString() ?? null,
+      group_penalty: d?.group_penalty ?? null,
     };
   },
   ["settings"],
@@ -216,4 +218,5 @@ export const getSettings: () => Promise<Settings> = unstable_cache(
 export type Settings = {
   champion: string | null;
   champion_lock: string | null;
+  group_penalty: number | null;
 };

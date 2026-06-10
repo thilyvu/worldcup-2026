@@ -58,6 +58,8 @@ export async function savePredictionAction(formData: FormData) {
   const match = await getMatch(matchId);
   if (!match) return;
 
+  if (match.round !== "group" && pick === "draw") return;
+
   const locked =
     match.status === "finished" ||
     (match.kickoff && new Date(match.kickoff).getTime() <= Date.now());
@@ -161,6 +163,20 @@ export async function setChampionAction(formData: FormData) {
   await db
     .collection("settings")
     .updateOne({}, { $set: { champion: champion || null } }, { upsert: true });
+
+  revalidateTag("settings");
+  revalidatePath("/admin");
+  revalidatePath("/");
+}
+
+export async function setGroupPenaltyAction(formData: FormData) {
+  await requireAdmin();
+  const val = Number(formData.get("group_penalty"));
+  if (!Number.isFinite(val) || val < 0) return;
+  const db = await getDb();
+  await db
+    .collection("settings")
+    .updateOne({}, { $set: { group_penalty: val } }, { upsert: true });
 
   revalidateTag("settings");
   revalidatePath("/admin");

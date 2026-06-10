@@ -9,10 +9,11 @@ import {
 
 export type LeaderboardRow = {
   player: Player;
-  points: number;
+  balance: number;       // k VND: starts 0, wrong picks subtract, champion adds 100
   correct: number;
   played: number;
-  championPoints: number;
+  penalty: number;       // total k VND lost (always >= 0)
+  championBonus: number; // 0 or 100
   rank: number;
 };
 
@@ -25,17 +26,11 @@ export async function computeLeaderboard(): Promise<LeaderboardRow[]> {
     getSettings(),
   ]);
 
+  const groupPenalty = settings.group_penalty ?? 5;
   const matchById = new Map<string, Match>(matches.map((m) => [m.id, m]));
   const base = new Map<string, LeaderboardRow>();
   for (const p of players) {
-    base.set(p.id, {
-      player: p,
-      points: 0,
-      correct: 0,
-      played: 0,
-      championPoints: 0,
-      rank: 0,
-    });
+    base.set(p.id, { player: p, balance: 0, correct: 0, played: 0, penalty: 0, championBonus: 0, rank: 0 });
   }
 
   for (const pr of preds) {
@@ -45,8 +40,11 @@ export async function computeLeaderboard(): Promise<LeaderboardRow[]> {
     if (m.status !== "finished" || !m.result) continue;
     row.played += 1;
     if (pr.pick === m.result) {
-      row.points += m.points;
       row.correct += 1;
+    } else {
+      const amt = m.round === "group" ? groupPenalty : m.points;
+      row.penalty += amt;
+      row.balance -= amt;
     }
   }
 
@@ -54,24 +52,24 @@ export async function computeLeaderboard(): Promise<LeaderboardRow[]> {
     for (const cp of champPicks) {
       const row = base.get(cp.player_id);
       if (row && cp.team === settings.champion) {
-        row.championPoints += cp.points;
-        row.points += cp.points;
+        row.championBonus = 100;
+        row.balance += 100;
       }
     }
   }
 
   const rows = [...base.values()].sort(
     (a, b) =>
-      b.points - a.points ||
-      b.correct - a.correct ||
+      b.balance - a.balance ||
+      a.penalty - b.penalty ||
       a.player.name.localeCompare(b.player.name)
   );
   let rank = 0;
-  let prev = -1;
+  let prev = Infinity;
   rows.forEach((r, i) => {
-    if (r.points !== prev) {
+    if (r.balance !== prev) {
       rank = i + 1;
-      prev = r.points;
+      prev = r.balance;
     }
     r.rank = rank;
   });

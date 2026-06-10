@@ -150,7 +150,7 @@ export default async function PredictPage({ searchParams }: { searchParams: Prom
                   {/* Right: pick buttons */}
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                     <PickBtn match={m} pick="team1" current={current} locked={locked} />
-                    <PickBtn match={m} pick="draw"  current={current} locked={locked} />
+                    {m.round === "group" && <PickBtn match={m} pick="draw" current={current} locked={locked} />}
                     <PickBtn match={m} pick="team2" current={current} locked={locked} />
                   </div>
                 </div>
