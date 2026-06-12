@@ -98,7 +98,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               fontWeight: 700, textDecoration: "none", letterSpacing: "0.04em",
               transition: "all 0.15s", fontFamily: "var(--font-barlow)",
               background: active ? "rgba(255,184,0,0.1)" : "rgba(255,255,255,0.025)",
-              color: active ? "#FFB800" : "rgba(232,245,238,0.3)",
+              color: active ? "#FFB800" : "rgba(232,245,238,0.7)",
               border: `1px solid ${active ? "rgba(255,184,0,0.3)" : "rgba(255,255,255,0.06)"}`,
             }}>
               {ROUND_LABEL[r].toUpperCase()}

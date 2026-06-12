@@ -85,7 +85,7 @@ export function PredictClient({
               fontWeight: 700, letterSpacing: "0.04em", cursor: "pointer",
               transition: "all 0.15s", fontFamily: "var(--font-barlow)", border: "none",
               background: active ? "rgba(0,232,122,0.1)" : "rgba(255,255,255,0.025)",
-              color: active ? "#00E87A" : "rgba(232,245,238,0.3)",
+              color: active ? "#00E87A" : "rgba(232,245,238,0.7)",
               outline: `1px solid ${active ? "rgba(0,232,122,0.3)" : "rgba(255,255,255,0.06)"}`,
             }}>
               {ROUND_LABEL[r].toUpperCase()}
@@ -124,13 +124,13 @@ export function PredictClient({
                   {round === "group" && m.group_name && (
                     <span style={{
                       fontSize: "0.6rem", fontFamily: "var(--font-mono)",
-                      color: "rgba(232,245,238,0.2)",
+                      color: "rgba(232,245,238,0.6)",
                     }}>Bảng {m.group_name}</span>
                   )}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
                   {m.kickoff && (
-                    <span style={{ fontSize: "0.65rem", fontFamily: "var(--font-mono)", color: "rgba(232,245,238,0.22)" }}>
+                    <span style={{ fontSize: "0.65rem", fontFamily: "var(--font-mono)", color: "rgba(232,245,238,0.6)" }}>
                       {fmtDate(m.kickoff)}
                     </span>
                   )}
