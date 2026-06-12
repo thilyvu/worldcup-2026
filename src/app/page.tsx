@@ -104,7 +104,7 @@ export default async function HomePage() {
                 }}>
                   {r.player.name[0]}
                 </div>
-                <div style={{ minWidth: 0, overflow: "hidden" }}>
+                <div style={{ minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <span style={{
                       fontWeight: 700, fontSize: "0.95rem",
