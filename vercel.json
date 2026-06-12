@@ -1,10 +1,4 @@
 {
   "framework": "nextjs",
-  "installCommand": "pnpm install --ignore-scripts",
-  "crons": [
-    {
-      "path": "/api/sync",
-      "schedule": "*/10 * * * *"
-    }
-  ]
+  "installCommand": "pnpm install --ignore-scripts"
 }
