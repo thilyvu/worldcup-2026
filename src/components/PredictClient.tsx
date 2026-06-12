@@ -59,13 +59,6 @@ export function PredictClient({
   const finished  = matches.filter(m => m.status === "finished").length;
   const correct   = matches.filter(m => m.status === "finished" && predMap.get(m.id) === m.result).length;
 
-  const groups = new Map<string, Match[]>();
-  for (const m of matches) {
-    const k = m.group_name ?? "—";
-    if (!groups.has(k)) groups.set(k, []);
-    groups.get(k)!.push(m);
-  }
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Header */}
@@ -101,71 +94,67 @@ export function PredictClient({
         })}
       </div>
 
-      {/* Match groups */}
-      {[...groups.entries()].map(([group, gMatches]) => (
-        <div key={group}>
-          {round === "group" && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <div className="g-badge">{group}</div>
-              <span className="label">Bảng {group}</span>
-            </div>
-          )}
-          <div className="glass" style={{ padding: 0 }}>
-            {gMatches.map((m, mi) => {
-              const locked  = isLocked(m);
-              const current = predMap.get(m.id);
-              const hasScore = m.status === "finished" && m.score1 != null;
-              const upcoming = !locked && m.status !== "finished";
-              return (
-                <div key={m.id} style={{
-                  display: "flex", alignItems: "center", gap: 12,
-                  padding: "12px 18px",
-                  borderBottom: mi < gMatches.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
-                  flexWrap: "wrap",
-                }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>{m.team1}</span>
-                      {hasScore ? (
-                        <span className="score-badge">{m.score1} – {m.score2}</span>
-                      ) : (
-                        <span style={{
-                          fontSize: "0.65rem", fontFamily: "var(--font-mono)",
-                          color: "rgba(232,245,238,0.2)", padding: "2px 8px",
-                          border: "1px solid rgba(255,255,255,0.05)", borderRadius: 6,
-                        }}>VS</span>
-                      )}
-                      <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>{m.team2}</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
-                      {m.kickoff && (
-                        <span style={{ fontSize: "0.65rem", fontFamily: "var(--font-mono)", color: "rgba(232,245,238,0.22)" }}>
-                          {fmtDate(m.kickoff)}
-                        </span>
-                      )}
-                      {locked && !hasScore && (
-                        <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "0.6rem", fontFamily: "var(--font-mono)", color: "#FFB800" }}>
-                          <span className="live-dot" />LIVE
-                        </span>
-                      )}
-                      {upcoming && !current && (
-                        <span style={{ fontSize: "0.6rem", fontFamily: "var(--font-mono)", color: "rgba(255,184,0,0.6)" }}>
-                          ⚠ chưa đoán
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                    <PickBtn match={m} pick="team1" current={current} locked={locked} />
-                    {m.round === "group" && <PickBtn match={m} pick="draw" current={current} locked={locked} />}
-                    <PickBtn match={m} pick="team2" current={current} locked={locked} />
-                  </div>
+      {/* Match list */}
+      <div className="glass" style={{ padding: 0 }}>
+        {matches.map((m, mi) => {
+          const locked  = isLocked(m);
+          const current = predMap.get(m.id);
+          const hasScore = m.status === "finished" && m.score1 != null;
+          const upcoming = !locked && m.status !== "finished";
+          return (
+            <div key={m.id} style={{
+              display: "flex", alignItems: "center", gap: 12,
+              padding: "12px 18px",
+              borderBottom: mi < matches.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
+              flexWrap: "wrap",
+            }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>{m.team1}</span>
+                  {hasScore ? (
+                    <span className="score-badge">{m.score1} – {m.score2}</span>
+                  ) : (
+                    <span style={{
+                      fontSize: "0.65rem", fontFamily: "var(--font-mono)",
+                      color: "rgba(232,245,238,0.2)", padding: "2px 8px",
+                      border: "1px solid rgba(255,255,255,0.05)", borderRadius: 6,
+                    }}>VS</span>
+                  )}
+                  <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>{m.team2}</span>
+                  {round === "group" && m.group_name && (
+                    <span style={{
+                      fontSize: "0.6rem", fontFamily: "var(--font-mono)",
+                      color: "rgba(232,245,238,0.2)",
+                    }}>Bảng {m.group_name}</span>
+                  )}
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
+                  {m.kickoff && (
+                    <span style={{ fontSize: "0.65rem", fontFamily: "var(--font-mono)", color: "rgba(232,245,238,0.22)" }}>
+                      {fmtDate(m.kickoff)}
+                    </span>
+                  )}
+                  {locked && !hasScore && (
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "0.6rem", fontFamily: "var(--font-mono)", color: "#FFB800" }}>
+                      <span className="live-dot" />LIVE
+                    </span>
+                  )}
+                  {upcoming && !current && (
+                    <span style={{ fontSize: "0.6rem", fontFamily: "var(--font-mono)", color: "rgba(255,184,0,0.6)" }}>
+                      ⚠ chưa đoán
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                <PickBtn match={m} pick="team1" current={current} locked={locked} />
+                {m.round === "group" && <PickBtn match={m} pick="draw" current={current} locked={locked} />}
+                <PickBtn match={m} pick="team2" current={current} locked={locked} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

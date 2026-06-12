@@ -182,3 +182,66 @@ export async function setGroupPenaltyAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/");
 }
+
+// ---- Sync from football-data.org -----------------------------------------
+
+export async function syncResultsAction(): Promise<{ updated: number; notFound: string[] }> {
+  await requireAdmin();
+
+  const apiKey = process.env.FOOTBALL_DATA_API_KEY;
+  if (!apiKey) throw new Error("FOOTBALL_DATA_API_KEY chưa được cấu hình");
+
+  const res = await fetch(
+    "https://api.football-data.org/v4/competitions/WC/matches?status=FINISHED",
+    { headers: { "X-Auth-Token": apiKey }, cache: "no-store" }
+  );
+  if (!res.ok) throw new Error(`API lỗi: ${res.status}`);
+
+  const data = await res.json() as {
+    matches: Array<{
+      utcDate: string;
+      homeTeam: { name: string };
+      awayTeam: { name: string };
+      score: { fullTime: { home: number | null; away: number | null } };
+    }>;
+  };
+
+  const db = await getDb();
+  const col = db.collection("matches");
+
+  let updated = 0;
+  const notFound: string[] = [];
+
+  for (const am of data.matches) {
+    const { home, away } = am.score.fullTime;
+    if (home === null || away === null) continue;
+
+    const kickoffUTC = new Date(am.utcDate);
+    const from = new Date(kickoffUTC.getTime() - 5 * 60 * 1000);
+    const to   = new Date(kickoffUTC.getTime() + 5 * 60 * 1000);
+
+    const score1 = home;
+    const score2 = away;
+    const result: Pick = score1 > score2 ? "team1" : score1 < score2 ? "team2" : "draw";
+
+    const r = await col.updateOne(
+      { kickoff: { $gte: from, $lte: to } },
+      { $set: { score1, score2, result, status: "finished" } }
+    );
+
+    if (r.matchedCount > 0) {
+      updated++;
+    } else {
+      notFound.push(`${am.homeTeam.name} vs ${am.awayTeam.name} @ ${am.utcDate}`);
+    }
+  }
+
+  revalidateTag("matches");
+  revalidateTag("predictions");
+  revalidatePath("/admin");
+  revalidatePath("/");
+  revalidatePath("/matches");
+  revalidatePath("/groups");
+
+  return { updated, notFound };
+}

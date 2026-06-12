@@ -33,6 +33,13 @@ export async function computeLeaderboard(): Promise<LeaderboardRow[]> {
     base.set(p.id, { player: p, balance: 0, correct: 0, played: 0, penalty: 0, championBonus: 0, rank: 0 });
   }
 
+  // map match_id -> set of player_ids who predicted
+  const predictedBy = new Map<string, Set<string>>();
+  for (const pr of preds) {
+    if (!predictedBy.has(pr.match_id)) predictedBy.set(pr.match_id, new Set());
+    predictedBy.get(pr.match_id)!.add(pr.player_id);
+  }
+
   for (const pr of preds) {
     const m = matchById.get(pr.match_id);
     const row = base.get(pr.player_id);
@@ -48,6 +55,20 @@ export async function computeLeaderboard(): Promise<LeaderboardRow[]> {
     }
   }
 
+  // players who didn't predict a finished match lose automatically
+  for (const m of matches) {
+    if (m.status !== "finished" || !m.result) continue;
+    const amt = m.round === "group" ? groupPenalty : m.points;
+    const predicted = predictedBy.get(m.id) ?? new Set();
+    for (const row of base.values()) {
+      if (!predicted.has(row.player.id)) {
+        row.played += 1;
+        row.penalty += amt;
+        row.balance -= amt;
+      }
+    }
+  }
+
   if (settings.champion) {
     for (const cp of champPicks) {
       const row = base.get(cp.player_id);
@@ -60,8 +81,8 @@ export async function computeLeaderboard(): Promise<LeaderboardRow[]> {
 
   const rows = [...base.values()].sort(
     (a, b) =>
-      b.balance - a.balance ||
-      a.penalty - b.penalty ||
+      a.balance - b.balance ||
+      b.penalty - a.penalty ||
       a.player.name.localeCompare(b.player.name)
   );
   let rank = 0;

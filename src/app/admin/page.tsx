@@ -3,6 +3,7 @@ import { getCurrentPlayer } from "@/lib/auth";
 import { getMatches, getSettings } from "@/lib/queries";
 import { ROUND_LABEL, ROUND_ORDER } from "@/lib/types";
 import { setResultAction, setTeamsAction, setChampionAction, setGroupPenaltyAction } from "@/lib/actions";
+import { SyncButton } from "@/components/SyncButton";
 
 export const dynamic = "force-dynamic";
 
@@ -42,8 +43,13 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         </h1>
       </div>
 
+      {/* Sync */}
+      <div className="anim-up d1">
+        <SyncButton />
+      </div>
+
       {/* Settings row */}
-      <div className="anim-up d1" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+      <div className="anim-up d2" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         {/* Set champion */}
         <div className="glass glass-gold" style={{ padding: "20px 24px", flex: "1 1 260px" }}>
         <p style={{ fontWeight: 700, fontSize: "0.85rem", marginBottom: 12, color: "#FFB800" }}>🏆 Đặt nhà vô địch</p>
@@ -83,7 +89,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       </div>
 
       {/* Round tabs */}
-      <div className="anim-up d2" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+      <div className="anim-up d3" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {ROUND_ORDER.map((r) => {
           const active = r === round;
           return (
@@ -115,7 +121,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       </div>
 
       {/* Match list */}
-      <div className="glass anim-up d3" style={{ padding: 0 }}>
+      <div className="glass anim-up d4" style={{ padding: 0 }}>
         {matches.map((m, i) => {
           const hasTBD = m.team1 === "TBD" || m.team2 === "TBD";
           return (
