@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
 import { getCurrentPlayer } from "@/lib/auth";
-import { getMatches, getSettings } from "@/lib/queries";
+import { getMatches, getSettings, getSyncStatus } from "@/lib/queries";
 import { ROUND_LABEL, ROUND_ORDER } from "@/lib/types";
 import { setResultAction, setTeamsAction, setChampionAction, setGroupPenaltyAction } from "@/lib/actions";
-import { SyncButton } from "@/components/SyncButton";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +21,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const { round: sel } = await searchParams;
   const round = ROUND_ORDER.includes(sel as never) ? sel as typeof ROUND_ORDER[number] : "group";
 
-  const [matches, settings] = await Promise.all([getMatches(round), getSettings()]);
+  const [matches, settings, sync] = await Promise.all([getMatches(round), getSettings(), getSyncStatus()]);
   const finished = matches.filter(m => m.status === "finished").length;
 
   return (
@@ -43,9 +42,36 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         </h1>
       </div>
 
-      {/* Sync */}
-      <div className="anim-up d1">
-        <SyncButton />
+      {/* Sync status — auto-sync runs from an external scheduler (cron-job.org) */}
+      <div className="anim-up d1 glass" style={{ padding: "14px 18px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <span style={{
+            width: 8, height: 8, borderRadius: 99, flexShrink: 0,
+            background: sync.last_error ? "#FF4D6A" : sync.last_sync_at ? "#00E87A" : "rgba(232,245,238,0.3)",
+          }} />
+          <span style={{ fontWeight: 700, fontSize: "0.82rem" }}>Auto-sync</span>
+          <span className="label" style={{ fontFamily: "var(--font-mono)" }}>
+            {sync.last_sync_at
+              ? `Lần cuối ${fmtDate(sync.last_sync_at)}`
+              : "Chưa chạy lần nào"}
+          </span>
+          {sync.last_sync_at && !sync.last_error && (
+            <span className="label" style={{ fontFamily: "var(--font-mono)" }}>
+              · cập nhật {sync.last_updated_count ?? 0} trận
+              {sync.last_teams_filled ? ` · điền đội ${sync.last_teams_filled}` : ""}
+            </span>
+          )}
+        </div>
+        {sync.last_error && (
+          <p style={{ marginTop: 6, fontSize: "0.72rem", fontFamily: "var(--font-mono)", color: "#FF4D6A" }}>
+            Lỗi: {sync.last_error}
+          </p>
+        )}
+        {sync.last_not_found.length > 0 && (
+          <p style={{ marginTop: 6, fontSize: "0.72rem", fontFamily: "var(--font-mono)", color: "#FFB800" }}>
+            ⚠ {sync.last_not_found.length} trận không khớp (cần thêm alias tên đội): {sync.last_not_found.join(", ")}
+          </p>
+        )}
       </div>
 
       {/* Settings row */}

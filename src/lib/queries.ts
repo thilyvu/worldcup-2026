@@ -108,7 +108,7 @@ export async function getPlayerById(id: string): Promise<Player | null> {
 // ---- Matches -------------------------------------------------------------
 // Cache 60s per round — invalidated by setResultAction / setTeamsAction
 
-const ROUND_ORDER = ["group", "r32", "r16", "qf", "sf", "final"];
+const ROUND_ORDER = ["group", "r32", "r16", "qf", "sf", "third", "final"];
 
 export function getMatches(round?: Round): Promise<Match[]> {
   const key = round ?? "all";
@@ -220,3 +220,34 @@ export type Settings = {
   champion_lock: string | null;
   group_penalty: number | null;
 };
+
+// ---- Sync status ---------------------------------------------------------
+// NOT cached — admin page is force-dynamic and wants the live sync heartbeat.
+
+type SyncStatusDoc = {
+  last_sync_at?: Date | null;
+  last_updated_count?: number | null;
+  last_teams_filled?: number | null;
+  last_not_found?: string[] | null;
+  last_error?: string | null;
+};
+
+export type SyncStatus = {
+  last_sync_at: string | null;
+  last_updated_count: number | null;
+  last_teams_filled: number | null;
+  last_not_found: string[];
+  last_error: string | null;
+};
+
+export async function getSyncStatus(): Promise<SyncStatus> {
+  const c = await col<SyncStatusDoc>("settings");
+  const d = await c.findOne({});
+  return {
+    last_sync_at: d?.last_sync_at ? new Date(d.last_sync_at).toISOString() : null,
+    last_updated_count: d?.last_updated_count ?? null,
+    last_teams_filled: d?.last_teams_filled ?? null,
+    last_not_found: d?.last_not_found ?? [],
+    last_error: d?.last_error ?? null,
+  };
+}

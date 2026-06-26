@@ -1,4 +1,4 @@
-export type Round = "group" | "r32" | "r16" | "qf" | "sf" | "final";
+export type Round = "group" | "r32" | "r16" | "qf" | "sf" | "third" | "final";
 
 export const ROUND_LABEL: Record<Round, string> = {
   group: "Vòng bảng",
@@ -6,10 +6,11 @@ export const ROUND_LABEL: Record<Round, string> = {
   r16: "Vòng 1/16",
   qf: "Tứ kết",
   sf: "Bán kết",
+  third: "Tranh hạng 3",
   final: "Chung kết",
 };
 
-export const ROUND_ORDER: Round[] = ["group", "r32", "r16", "qf", "sf", "final"];
+export const ROUND_ORDER: Round[] = ["group", "r32", "r16", "qf", "sf", "third", "final"];
 
 export type Pick = "team1" | "team2" | "draw";
 
