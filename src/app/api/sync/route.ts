@@ -103,48 +103,64 @@ export async function GET(req: Request) {
 
       const apiHome = am.homeTeam?.name;
       const apiAway = am.awayTeam?.name;
-      // Teams not yet determined (future knockout slot) — nothing to do yet.
-      if (!apiHome || !apiAway) continue;
+      // Skip if both teams are unknown — nothing to do yet.
+      if (!apiHome && !apiAway) continue;
 
-      const h = canon(apiHome);
-      const a = canon(apiAway);
+      const h = apiHome ? canon(apiHome) : null;
+      const a = apiAway ? canon(apiAway) : null;
 
-      // 1) Match by team pair within the round. Each pairing is unique, so this is
-      //    exact even for the 24 group games that kick off simultaneously, and it's
-      //    immune to the unreliable kickoff times in the seed data.
+      // 1) Find the DB slot for this API match.
+      //    - Both teams known: exact pair match, OR a half-filled slot containing either team.
+      //    - One team known: half-filled slot containing that team, or a fully-empty TBD/TBD slot.
       let target = docs.find((d) => {
         if (d.round !== round) return false;
         const t1 = norm(d.team1);
         const t2 = norm(d.team2);
-        return (t1 === h && t2 === a) || (t1 === a && t2 === h);
+        if (h && a) {
+          if ((t1 === h && t2 === a) || (t1 === a && t2 === h)) return true;
+          // Slot partially filled from a previous sync run — one side still TBD.
+          if ((t1 === h || t1 === a) && d.team2 === "TBD") return true;
+          if ((t2 === h || t2 === a) && d.team1 === "TBD") return true;
+          return false;
+        }
+        if (h) return (t1 === h && d.team2 === "TBD") || (t2 === h && d.team1 === "TBD");
+        if (a) return (t1 === a && d.team2 === "TBD") || (t2 === a && d.team1 === "TBD");
+        return false;
       });
 
-      // 2) Knockout slot not yet populated → claim the first empty (TBD) slot of
-      //    this round. Slots are independent predictions, so any empty one works.
+      // 2) No match → claim the first fully-empty (TBD/TBD) slot for this round.
       if (!target && round !== "group") {
         target = docs.find((d) => d.round === round && d.team1 === "TBD" && d.team2 === "TBD");
       }
 
       if (!target) {
-        notFound.push(`${apiHome} vs ${apiAway} (${am.stage})`);
+        if (apiHome || apiAway) notFound.push(`${apiHome ?? "TBD"} vs ${apiAway ?? "TBD"} (${am.stage})`);
         continue;
       }
 
       const set: Partial<MatchDoc> = {};
 
-      // Auto-fill knockout teams once, as soon as they're known (fill-once: never
-      // overwrite, so existing predictions keep their team1/team2 meaning). Mutate
-      // the in-memory doc so the next API match can't claim the same slot.
-      if (
-        target.round !== "group" &&
-        target.team1 === "TBD" &&
-        target.team2 === "TBD"
-      ) {
-        set.team1 = aliasName(apiHome);
-        set.team2 = aliasName(apiAway);
-        target.team1 = set.team1;
-        target.team2 = set.team2;
-        teamsFilled++;
+      // Fill team slots independently so partial matches (one team still null) are
+      // handled in two passes: fill the known side now, fill the other side next sync.
+      if (target.round !== "group") {
+        const existT1 = target.team1 !== "TBD" ? norm(target.team1) : null;
+        const existT2 = target.team2 !== "TBD" ? norm(target.team2) : null;
+
+        if (target.team1 === "TBD") {
+          // Fill team1 with whichever API team is not already occupying team2.
+          const fill = (apiHome && existT2 !== h) ? apiHome
+                     : (apiAway && existT2 !== a) ? apiAway
+                     : null;
+          if (fill) { set.team1 = aliasName(fill); target.team1 = set.team1; teamsFilled++; }
+        }
+        if (target.team2 === "TBD") {
+          const t1Final = set.team1 ? norm(set.team1) : existT1;
+          // Fill team2 with whichever API team is not already occupying team1.
+          const fill = (apiAway && t1Final !== a) ? apiAway
+                     : (apiHome && t1Final !== h) ? apiHome
+                     : null;
+          if (fill) { set.team2 = aliasName(fill); target.team2 = set.team2; teamsFilled++; }
+        }
       }
 
       // Keep kickoff in sync with the official schedule (seed times are unreliable),
