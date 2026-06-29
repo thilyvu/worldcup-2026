@@ -1,4 +1,4 @@
-import type { Match, Player } from "./types";
+import { ROUND_LABEL, ROUND_ORDER, type Match, type Player, type Round } from "./types";
 import {
   getAllPredictions,
   getChampionPicks,
@@ -153,4 +153,84 @@ export function computeGroupStandings(
     out.set(group, arr);
   }
   return new Map([...out.entries()].sort((a, b) => a[0].localeCompare(b[0])));
+}
+
+export type RoundStat = {
+  player: Player;
+  correct: number;
+  played: number;
+  penalty: number;
+  balance: number;
+};
+
+export type PerRoundData = {
+  round: Round;
+  label: string;
+  stats: RoundStat[];
+};
+
+export async function computePerRoundStats(): Promise<PerRoundData[]> {
+  const [players, matches, preds, settings] = await Promise.all([
+    getPlayers(),
+    getMatches(),
+    getAllPredictions(),
+    getSettings(),
+  ]);
+
+  const groupPenalty = settings.group_penalty ?? 5;
+  const matchById = new Map<string, Match>(matches.map((m) => [m.id, m]));
+
+  const roundData = new Map<Round, Map<string, RoundStat>>();
+  for (const round of ROUND_ORDER) {
+    const pm = new Map<string, RoundStat>();
+    for (const p of players)
+      pm.set(p.id, { player: p, correct: 0, played: 0, penalty: 0, balance: 0 });
+    roundData.set(round, pm);
+  }
+
+  const predictedBy = new Map<string, Set<string>>();
+  for (const pr of preds) {
+    if (!predictedBy.has(pr.match_id)) predictedBy.set(pr.match_id, new Set());
+    predictedBy.get(pr.match_id)!.add(pr.player_id);
+  }
+
+  for (const pr of preds) {
+    const m = matchById.get(pr.match_id);
+    if (!m || m.status !== "finished" || !m.result) continue;
+    const stat = roundData.get(m.round)?.get(pr.player_id);
+    if (!stat) continue;
+    stat.played += 1;
+    if (pr.pick === m.result) {
+      stat.correct += 1;
+    } else {
+      const amt = m.round === "group" ? groupPenalty : m.points;
+      stat.penalty += amt;
+      stat.balance -= amt;
+    }
+  }
+
+  for (const m of matches) {
+    if (m.status !== "finished" || !m.result) continue;
+    const amt = m.round === "group" ? groupPenalty : m.points;
+    const predicted = predictedBy.get(m.id) ?? new Set();
+    const roundMap = roundData.get(m.round);
+    if (!roundMap) continue;
+    for (const stat of roundMap.values()) {
+      if (!predicted.has(stat.player.id)) {
+        stat.played += 1;
+        stat.penalty += amt;
+        stat.balance -= amt;
+      }
+    }
+  }
+
+  const result: PerRoundData[] = [];
+  for (const round of ROUND_ORDER) {
+    const pm = roundData.get(round)!;
+    const stats = [...pm.values()];
+    if (stats.every((s) => s.played === 0)) continue;
+    stats.sort((a, b) => a.balance - b.balance || a.player.name.localeCompare(b.player.name));
+    result.push({ round, label: ROUND_LABEL[round], stats });
+  }
+  return result;
 }
