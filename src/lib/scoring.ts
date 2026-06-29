@@ -228,7 +228,6 @@ export async function computePerRoundStats(): Promise<PerRoundData[]> {
   for (const round of ROUND_ORDER) {
     const pm = roundData.get(round)!;
     const stats = [...pm.values()];
-    if (stats.every((s) => s.played === 0)) continue;
     stats.sort((a, b) => a.balance - b.balance || a.player.name.localeCompare(b.player.name));
     result.push({ round, label: ROUND_LABEL[round], stats });
   }
