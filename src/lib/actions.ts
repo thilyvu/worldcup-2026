@@ -92,7 +92,7 @@ export async function saveChampionAction(formData: FormData) {
   const db = await getDb();
   await db.collection("champion_picks").updateOne(
     { player_id: new ObjectId(player.id) },
-    { $set: { team, points: 50, updated_at: new Date() }, $setOnInsert: { created_at: new Date() } },
+    { $set: { team, points: 100, updated_at: new Date() }, $setOnInsert: { created_at: new Date() } },
     { upsert: true }
   );
 

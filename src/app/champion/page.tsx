@@ -40,7 +40,7 @@ export default async function ChampionPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Header */}
       <div className="anim-up">
-        <p className="label" style={{ marginBottom: 6 }}>Lucky Round · 50 điểm</p>
+        <p className="label" style={{ marginBottom: 6 }}>Lucky Round · 100 điểm</p>
         <h1 className="font-display" style={{ fontSize: "clamp(2.2rem,6vw,3.8rem)", lineHeight: 0.9, letterSpacing: "0.04em" }}>
           CHỌN NHÀ <span className="text-gold-grad">VÔ ĐỊCH</span>
         </h1>
