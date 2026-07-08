@@ -149,7 +149,6 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       {/* Match list */}
       <div className="glass anim-up d4" style={{ padding: 0 }}>
         {matches.map((m, i) => {
-          const hasTBD = m.team1 === "TBD" || m.team2 === "TBD";
           return (
             <div key={m.id} style={{
               padding: "16px 20px",
@@ -181,19 +180,17 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
               {/* Forms */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                {hasTBD && (
-                  <form action={setTeamsAction} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <input type="hidden" name="matchId" value={m.id} />
-                    <input name="team1" defaultValue={m.team1} placeholder="Đội 1" className="input" style={{ width: 120, fontSize: "0.85rem" }} />
-                    <input name="team2" defaultValue={m.team2} placeholder="Đội 2" className="input" style={{ width: 120, fontSize: "0.85rem" }} />
-                    <button type="submit" style={{
-                      padding: "8px 14px", borderRadius: 9,
-                      border: "1px solid rgba(77,158,255,0.3)", background: "rgba(77,158,255,0.07)",
-                      color: "#4D9EFF", fontFamily: "var(--font-barlow)",
-                      fontWeight: 700, fontSize: "0.8rem", cursor: "pointer", whiteSpace: "nowrap",
-                    }}>Cập nhật đội</button>
-                  </form>
-                )}
+                <form action={setTeamsAction} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input type="hidden" name="matchId" value={m.id} />
+                  <input name="team1" defaultValue={m.team1} placeholder="Đội 1" className="input" style={{ width: 120, fontSize: "0.85rem" }} />
+                  <input name="team2" defaultValue={m.team2} placeholder="Đội 2" className="input" style={{ width: 120, fontSize: "0.85rem" }} />
+                  <button type="submit" style={{
+                    padding: "8px 14px", borderRadius: 9,
+                    border: "1px solid rgba(77,158,255,0.3)", background: "rgba(77,158,255,0.07)",
+                    color: "#4D9EFF", fontFamily: "var(--font-barlow)",
+                    fontWeight: 700, fontSize: "0.8rem", cursor: "pointer", whiteSpace: "nowrap",
+                  }}>Cập nhật đội</button>
+                </form>
 
                 <form action={setResultAction} style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <input type="hidden" name="matchId" value={m.id} />
