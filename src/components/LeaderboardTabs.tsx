@@ -76,6 +76,8 @@ function RankBadge({ index }: { index: number }) {
 export function LeaderboardTabs({ rows, roundStats, myId }: Props) {
   const [active, setActive] = useState<string>("overview");
 
+  const totalLoss = rows.reduce((s, r) => s + r.penalty, 0);
+
   const tabs = [
     { key: "overview", label: "Tổng quan" },
     ...roundStats.map((r) => ({ key: r.round, label: r.label })),
@@ -207,6 +209,28 @@ export function LeaderboardTabs({ rows, roundStats, myId }: Props) {
               </div>
             );
           })}
+
+          {/* Total money loss */}
+          <div style={{
+            display: "grid", gridTemplateColumns: "52px 1fr 90px",
+            alignItems: "center",
+            padding: "14px 20px",
+            borderTop: "1px solid rgba(255,255,255,0.08)",
+            marginTop: 2,
+          }}>
+            <div />
+            <span className="label" style={{ letterSpacing: "0.08em" }}>
+              Tổng tiền thua
+            </span>
+            <div className="font-display" style={{
+              textAlign: "right",
+              fontSize: "1.6rem",
+              lineHeight: 1, letterSpacing: "0.02em",
+              color: "#FF4D6A",
+            }}>
+              {fmtMoney(-totalLoss)}
+            </div>
+          </div>
         </div>
       )}
 
